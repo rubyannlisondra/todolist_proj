@@ -1,0 +1,272 @@
+{% extends 'todos/base.html' %}
+{% block content %}
+
+<!-- Topbar -->
+<div class="topbar">
+    <div>
+        <h4>Dashboard</h4>
+        <p class="text-muted mb-0" style="font-size:0.9rem;">Manage your tasks efficiently</p>
+    </div>
+</div>
+
+<!-- Stats Row -->
+<div class="row g-3 mb-4">
+    <div class="col-md-4">
+        <div class="card p-3 text-center">
+            <div style="font-size:1.8rem; font-weight:700; color:#2d4a5f;">{{ total }}</div>
+            <div class="text-muted" style="font-size:0.85rem;">Total Tasks</div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card p-3 text-center">
+            <div style="font-size:1.8rem; font-weight:700; color:#5aab7a;">{{ completed_count }}</div>
+            <div class="text-muted" style="font-size:0.85rem;">Completed</div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card p-3 text-center">
+            <div style="font-size:1.8rem; font-weight:700; color:#e05c5c;">{{ overdue_count }}</div>
+            <div class="text-muted" style="font-size:0.85rem;">Overdue</div>
+        </div>
+    </div>
+</div>
+
+<!-- Progress Bar -->
+<div class="card mb-4 p-3">
+    <div class="d-flex justify-content-between align-items-center mb-2">
+        <span class="fw-semibold" style="color:#2d4a5f;">Task Progress</span>
+        <span class="text-muted" style="font-size:0.85rem;">{{ todos|length }} tasks shown</span>
+    </div>
+    <div class="progress">
+        <div class="progress-bar" id="progressBar" role="progressbar" style="width: 0%"></div>
+    </div>
+    <small class="text-muted mt-1" id="progressText"></small>
+</div>
+
+<div class="row g-4">
+
+    <!-- Left: Forms -->
+    <div class="col-md-4">
+        <div class="card mb-4">
+            <div class="card-header fw-bold text-white" style="background: linear-gradient(135deg, #2d4a5f, #6a9bbf);">
+                <i class="bi bi-plus-circle me-2"></i>Add New Task
+            </div>
+            <div class="card-body">
+                <form method="POST" action="{% url 'add_todo' %}">
+                    {% csrf_token %}
+                    <div class="mb-2">{{ todo_form.title }}</div>
+                    <div class="mb-2">
+                        <label class="form-label text-muted" style="font-size:0.85rem;">Due Date</label>
+                        {{ todo_form.due_date }}
+                    </div>
+                    <div class="mb-2">
+                        <label class="form-label text-muted" style="font-size:0.85rem; ">Category</label>
+                        {{ todo_form.category }}
+                    </div>
+                    <div class="mb-2">
+                        <label class="form-label text-muted" style="font-size:0.85rem;">Priority</label>
+                        {{ todo_form.priority }}
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label text-muted" style="font-size:0.85rem;">Recurrence</label>
+                        {{ todo_form.recurrence }}
+                    </div>
+                    <button type="submit" class="btn w-100" style="border-radius:10px; border:1.5px solid #6a9bbf; color:#2d4a5f;">
+                        <i class="bi bi-plus-lg me-1"></i> Add Task
+                    </button>
+                </form>
+            </div>
+        </div>
+
+        <div class="card">
+           <div class="card-header fw-bold text-white" style="background: linear-gradient(135deg, #2d4a5f, #6a9bbf);">
+                <i class="bi bi-tag me-2"></i>Add Category
+            </div>
+            <div class="card-body">
+                <form method="POST" action="{% url 'add_category' %}">
+                    {% csrf_token %}
+                    <div class="mb-3">{{ category_form.name }}</div>
+                    <button type="submit" class="btn w-100" style="border-radius:10px; border:1.5px solid #6a9bbf; color:#2d4a5f;">
+                        <i class="bi bi-plus-lg me-1"></i> Add Category
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Right: Task List -->
+    <div class="col-md-8">
+
+        <!-- Search & Sort -->
+        <div class="card mb-3 p-3">
+            <form method="GET" action="{% url 'index' %}" class="d-flex gap-2 flex-wrap">
+                <input type="text" name="search" value="{{ search_query }}" class="form-control" placeholder="🔍 Search tasks..." style="flex:1; min-width:150px;">
+                <select name="sort" class="form-select" style="width:auto;">
+                    <option value="-created_at" {% if sort_by == '-created_at' %}selected{% endif %}>Newest</option>
+                    <option value="created_at" {% if sort_by == 'created_at' %}selected{% endif %}>Oldest</option>
+                    <option value="due_date" {% if sort_by == 'due_date' %}selected{% endif %}>Due Date</option>
+                    <option value="title" {% if sort_by == 'title' %}selected{% endif %}>A-Z</option>
+                    <option value="-priority" {% if sort_by == '-priority' %}selected{% endif %}>Priority</option>
+                </select>
+                <button type="submit" class="btn btn-main">Go</button>
+                {% if search_query %}
+                <a href="{% url 'index' %}" class="btn" style="border:1.5px solid #6a9bbf; color:#2d4a5f;">Clear</a>
+                {% endif %}
+            </form>
+        </div>
+
+        <!-- Tabs -->
+        <div class="mb-3 d-flex flex-wrap gap-2">
+            <a href="?tab=all" class="filter-btn {% if tab == 'all' %}active{% endif %}">All</a>
+            <a href="?tab=today" class="filter-btn {% if tab == 'today' %}active{% endif %}">📅 Today</a>
+            <a href="?tab=upcoming" class="filter-btn {% if tab == 'upcoming' %}active{% endif %}">🔜 Upcoming</a>
+            <a href="?tab=overdue" class="filter-btn {% if tab == 'overdue' %}active{% endif %}">⚠️ Overdue</a>
+        </div>
+
+        <!-- Category Filter -->
+        <div class="mb-3 d-flex flex-wrap gap-2">
+            <a href="?tab={{ tab }}" class="filter-btn {% if not selected_category %}active{% endif %}">All Categories</a>
+            {% for cat in categories %}
+            <div class="d-flex align-items-center gap-1">
+                <a href="?tab={{ tab }}&category={{ cat.id }}" class="filter-btn {% if selected_category == cat.id|stringformat:'s' %}active{% endif %}">
+                    {{ cat.name }}
+                </a>
+                <a href="{% url 'delete_category' cat.id %}"
+                class="btn btn-sm btn-outline-danger"
+                style="border-radius:20px; padding:2px 7px; font-size:0.75rem;"
+                onclick="return confirm('Delete category \'{{ cat.name }}\'? Tasks in this category will not be deleted.')">
+                    <i class="bi bi-x"></i>
+                </a>
+            </div>
+            {% endfor %}
+        </div>
+
+        <!-- Tasks -->
+        {% for todo in todos %}
+        {% with subtask_total=todo.subtasks.count subtask_done=todo.subtasks.filter %}
+        <div class="card task-card {% if todo.completed %}completed{% endif %}">
+            <div class="card-body py-3">
+                <div class="d-flex justify-content-between align-items-start">
+                    <div style="flex:1;">
+                        <!-- Priority Badge -->
+                        <div class="d-flex align-items-center gap-2 mb-1 flex-wrap">
+                            {% if todo.priority == 'urgent' %}
+                                <span class="badge" style="background:#e05c5c; font-size:0.7rem;">🔴 Urgent</span>
+                            {% elif todo.priority == 'high' %}
+                                <span class="badge" style="background:#e08c3a; font-size:0.7rem;">🟠 High</span>
+                            {% elif todo.priority == 'medium' %}
+                                <span class="badge" style="background:#6a9bbf; font-size:0.7rem;">🔵 Medium</span>
+                            {% elif todo.priority == 'low' %}
+                                <span class="badge" style="background:#5aab7a; font-size:0.7rem;">🟢 Low</span>
+                            {% endif %}
+                            {% if todo.recurrence != 'none' %}
+                                <span class="badge" style="background:#a8cce0; color:#2d4a5f; font-size:0.7rem;">🔁 {{ todo.recurrence|capfirst }}</span>
+                            {% endif %}
+                        </div>
+
+                        <!-- Title -->
+                        <p class="mb-1 fw-semibold {% if todo.completed %}text-decoration-line-through text-muted{% endif %}" style="font-size:0.95rem; color:#2d4a5f;">
+                            {{ todo.title }}
+                        </p>
+
+                        <!-- Meta -->
+                        <div class="d-flex gap-2 align-items-center flex-wrap">
+                            {% if todo.category %}
+                                <span class="badge-category">{{ todo.category }}</span>
+                            {% endif %}
+                            {% if todo.due_date %}
+                                <span class="text-muted" style="font-size:0.78rem;">
+                                    <i class="bi bi-calendar3"></i> {{ todo.due_date }}
+                                    {% if todo.due_date < today and not todo.completed %}
+                                        <span style="color:#e05c5c; font-size:0.72rem;">⚠ Overdue</span>
+                                    {% endif %}
+                                </span>
+                            {% endif %}
+                            {% if todo.subtasks.count > 0 %}
+                                <span class="text-muted" style="font-size:0.78rem;">
+                                    <i class="bi bi-list-check"></i>
+                                    {{ todo.completed_subtask_count }}/{{ todo.subtask_count }} subtasks
+                                </span>
+                            {% endif %}
+                        </div>
+
+                        <!-- Subtask Progress -->
+                        {% if todo.subtask_count > 0 %}
+                        <div class="mt-2" style="max-width:200px;">
+                            <div class="progress" style="height:5px;">
+                                <div class="progress-bar subtask-bar" role="progressbar" data-progress="{{ todo.subtask_progress }}"></div>
+                            </div>
+                            <small class="text-muted" style="font-size:0.75rem;">
+                                {{ todo.completed_subtask_count }}/{{ todo.subtask_count }} subtasks
+                            </small>
+                        </div>
+                        {% endif %}
+                    </div>
+
+                    <!-- Action Buttons -->
+                    <div class="d-flex gap-2 ms-2 flex-shrink-0">
+                        <a href="{% url 'edit_todo' todo.pk %}" class="btn btn-sm" style="border-radius:8px; border:1.5px solid #6a9bbf; color:#2d4a5f;" title="Edit & Subtasks">
+                            <i class="bi bi-pencil"></i>
+                        </a>
+                        <a href="{% url 'toggle_todo' todo.pk %}" class="btn btn-sm {% if todo.completed %}btn-outline-secondary{% else %}btn-outline-success{% endif %}" style="border-radius:8px;" title="Toggle">
+                            <i class="bi {% if todo.completed %}bi-arrow-counterclockwise{% else %}bi-check-lg{% endif %}"></i>
+                        </a>
+                        <a href="{% url 'archive_todo' todo.pk %}" class="btn btn-sm" style="border-radius:8px; border:1.5px solid #a8cce0; color:#2d4a5f;" title="Archive">
+                            <i class="bi bi-archive"></i>
+                        </a>
+                        <a href="{% url 'delete_todo' todo.pk %}" class="btn btn-sm btn-outline-danger" style="border-radius:8px;" title="Delete">
+                            <i class="bi bi-trash"></i>
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endwith %}
+        {% empty %}
+        <div class="card p-5 text-center">
+            <i class="bi bi-clipboard-check" style="font-size:3rem; color:#a8cce0;"></i>
+            <h6 class="mt-3" style="color:#2d4a5f;">No tasks found</h6>
+            <p class="text-muted" style="font-size:0.88rem;">
+                {% if tab == 'today' %}No tasks due today!
+                {% elif tab == 'upcoming' %}No upcoming tasks!
+                {% elif tab == 'overdue' %}No overdue tasks!
+                {% elif search_query %}No results for "{{ search_query }}"
+                {% else %}Add your first task using the form on the left.
+                {% endif %}
+            </p>
+        </div>
+        {% endfor %}
+
+    </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const todos = document.querySelectorAll('.task-card');
+        const completed = document.querySelectorAll('.task-card.completed');
+        const total = todos.length;
+        const done = completed.length;
+        const percent = total > 0 ? Math.round((done / total) * 100) : 0;
+        document.getElementById('progressBar').style.width = percent + '%';
+        document.getElementById('progressText').textContent = done + ' of ' + total + ' tasks completed (' + percent + '%)';
+    });
+</script>
+
+<script>
+    // Set subtask progress bar widths
+    document.querySelectorAll('.subtask-bar').forEach(function(bar) {
+        bar.style.width = bar.getAttribute('data-progress') + '%';
+    });
+
+    // Overall progress bar
+    const todos = document.querySelectorAll('.task-card');
+    const completed = document.querySelectorAll('.task-card.completed');
+    const total = todos.length;
+    const done = completed.length;
+    const percent = total > 0 ? Math.round((done / total) * 100) : 0;
+    document.getElementById('progressBar').style.width = percent + '%';
+    document.getElementById('progressText').textContent = done + ' of ' + total + ' tasks completed (' + percent + '%)';
+</script>
+
+
+{% endblock %}

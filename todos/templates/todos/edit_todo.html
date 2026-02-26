@@ -1,0 +1,98 @@
+{% extends 'todos/base.html' %}
+{% block content %}
+<div class="topbar">
+    <div>
+        <h4>Edit Task</h4>
+        <p class="text-muted mb-0" style="font-size:0.9rem;">Update your task details and manage subtasks</p>
+    </div>
+</div>
+
+<div class="row g-4">
+    <!-- Edit Form -->
+    <div class="col-md-6">
+        <div class="card shadow-sm">
+            <div class="card-header fw-bold text-white" style="background: linear-gradient(135deg, #2d4a5f, #6a9bbf);">
+                <i class="bi bi-pencil me-2"></i>Edit Task
+            </div>
+            <div class="card-body p-4">
+                <form method="POST" action="{% url 'edit_todo' todo.pk %}">
+                    {% csrf_token %}
+                    <div class="mb-3">
+                        <label class="form-label text-muted" style="font-size:0.85rem;">Task Title</label>
+                        {{ form.title }}
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label text-muted" style="font-size:0.85rem;">Due Date</label>
+                        {{ form.due_date }}
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label text-muted" style="font-size:0.85rem;">Category</label>
+                        {{ form.category }}
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label text-muted" style="font-size:0.85rem;">Priority</label>
+                        {{ form.priority }}
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label text-muted" style="font-size:0.85rem;">Recurrence</label>
+                        {{ form.recurrence }}
+                    </div>
+                    <div class="d-flex gap-2">
+                        <button type="submit" class="btn btn-main w-100">
+                            <i class="bi bi-save me-1"></i> Save Changes
+                        </button>
+                        <a href="{% url 'index' %}" class="btn w-100" style="border-radius:10px; border:1.5px solid #6a9bbf; color:#2d4a5f;">
+                            Cancel
+                        </a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Subtasks -->
+    <div class="col-md-6">
+        <div class="card shadow-sm">
+            <div class="card-header fw-bold" style="background:#ddeaf3; color:#2d4a5f;">
+                <i class="bi bi-list-check me-2"></i>Subtasks
+                <span class="float-end text-muted" style="font-size:0.8rem;">
+                    {{ subtasks|length }} subtask(s)
+                </span>
+            </div>
+            <div class="card-body">
+                <!-- Add Subtask -->
+                <form method="POST" action="{% url 'add_subtask' todo.pk %}" class="d-flex gap-2 mb-3">
+                    {% csrf_token %}
+                    {{ subtask_form.title }}
+                    <button type="submit" class="btn btn-main" style="white-space:nowrap;">
+                        <i class="bi bi-plus-lg"></i>
+                    </button>
+                </form>
+
+                <!-- Subtask List -->
+                {% for subtask in subtasks %}
+               <div class="d-flex justify-content-between align-items-center p-2 mb-2 rounded 
+     {% if subtask.completed %}border-success{% else %}border-info{% endif %}">
+                    <span class="{% if subtask.completed %}text-decoration-line-through text-muted{% endif %}" style="font-size:0.9rem;">
+                        {{ subtask.title }}
+                    </span>
+                    <div class="d-flex gap-1">
+                        <a href="{% url 'toggle_subtask' subtask.pk %}" class="btn btn-sm {% if subtask.completed %}btn-outline-secondary{% else %}btn-outline-success{% endif %}" style="border-radius:6px; padding:2px 7px;">
+                            <i class="bi {% if subtask.completed %}bi-arrow-counterclockwise{% else %}bi-check-lg{% endif %}"></i>
+                        </a>
+                        <a href="{% url 'delete_subtask' subtask.pk %}" class="btn btn-sm btn-outline-danger" style="border-radius:6px; padding:2px 7px;">
+                            <i class="bi bi-trash"></i>
+                        </a>
+                    </div>
+                </div>
+                {% empty %}
+                <div class="text-center text-muted py-3" style="font-size:0.88rem;">
+                    <i class="bi bi-list-check" style="font-size:1.5rem; color:#a8cce0;"></i>
+                    <p class="mt-2">No subtasks yet. Add one above!</p>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

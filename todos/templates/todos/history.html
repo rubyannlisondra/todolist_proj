@@ -1,0 +1,45 @@
+{% extends 'todos/base.html' %}
+{% block content %}
+
+<div class="topbar">
+    <div>
+        <h4>Task History</h4>
+        <p class="text-muted mb-0" style="font-size:0.9rem;">A log of all your task activities</p>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-header fw-bold text-white" style="background: linear-gradient(135deg, #2d4a5f, #6a9bbf);">
+        <i class="bi bi-clock-history me-2"></i>Activity Log
+    </div>
+    <div class="card-body p-0">
+        {% for entry in history %}
+        <div class="d-flex justify-content-between align-items-center px-4 py-3 border-bottom" style="animation: slideIn 0.3s ease;">
+            <div class="d-flex align-items-center gap-3">
+                <div style="width:38px; height:38px; background:#ddeaf3; border-radius:50%; display:flex; align-items:center; justify-content:center; flex-shrink:0;">
+                    <i class="bi bi-clock-history" style="color:#2d4a5f;"></i>
+                </div>
+                <div>
+                    <span style="font-size:0.9rem; color:#2d4a5f; font-weight:500;">{{ entry.change_description }}</span>
+                    <div style="font-size:0.78rem;" class="text-muted">by {{ entry.changed_by.username }}</div>
+                </div>
+            </div>
+            <div class="text-end">
+                <small class="text-muted" style="font-size:0.78rem; white-space:nowrap;">
+                    <i class="bi bi-calendar3 me-1"></i>{{ entry.changed_at|date:"M d, Y" }}
+                </small>
+                <div class="text-muted" style="font-size:0.75rem;">
+                    <i class="bi bi-clock me-1"></i>{{ entry.changed_at|date:"H:i" }}
+                </div>
+            </div>
+        </div>
+        {% empty %}
+        <div class="text-center p-5">
+            <i class="bi bi-clock-history" style="font-size:3rem; color:#a8cce0;"></i>
+            <p class="mt-3 text-muted">No history yet. Start adding tasks!</p>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+
+{% endblock %}
