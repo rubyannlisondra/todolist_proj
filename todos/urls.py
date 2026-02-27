@@ -23,4 +23,6 @@ urlpatterns = [
     path('profile/change-password/', views.change_password, name='change_password'),
     path('history/', views.task_history, name='task_history'),
     path('delete-category/<int:pk>/', views.delete_category, name='delete_category'),
+    path('analytics/', views.analytics_view, name='analytics'),
+    path('analytics/export/', views.export_report, name='export_report'),
 ]
