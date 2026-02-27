@@ -54,7 +54,7 @@ MIDDLEWARE = [
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
 
-#CSRF_COOKIE_NAME = 'taskflow_csrf'
+#CSRF_COOKIE_NAME = 'taskly_csrf'
 #LOGOUT_REDIRECT_URL = '/login/'
 
 ROOT_URLCONF = 'todolist_proj.urls'

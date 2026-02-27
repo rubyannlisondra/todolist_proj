@@ -1,0 +1,278 @@
+{% extends 'todos/base.html' %}
+{% block content %}
+
+<div class="topbar d-flex justify-content-between align-items-center">
+    <div>
+        <h4>Class Board</h4>
+        <p class="text-muted mb-0" style="font-size:0.9rem;">Shared tasks visible to everyone</p>
+    </div>
+    <div class="d-flex gap-2">
+        <a href="{% url 'shared_task_progress' %}" class="btn" style="border:1.5px solid #6a9bbf; color:#2d4a5f; border-radius:10px;">
+            <i class="bi bi-bar-chart me-1"></i> My Tasks Progress
+        </a>
+        <button class="btn btn-main" data-bs-toggle="modal" data-bs-target="#createTaskModal">
+            <i class="bi bi-plus-lg me-1"></i> Create Shared Task
+        </button>
+    </div>
+</div>
+
+{% if tasks_with_status %}
+<div class="row g-3">
+    {% for item in tasks_with_status %}
+    <div class="col-md-6">
+        <div class="card" style="border-left: 4px solid
+            {% if item.task.priority == 'urgent' %}#e05c5c
+            {% elif item.task.priority == 'high' %}#e08c3a
+            {% elif item.task.priority == 'medium' %}#6a9bbf
+            {% else %}#5aab7a{% endif %};">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-start mb-2">
+                    <div>
+                        {% if item.task.priority == 'urgent' %}
+                            <span class="badge mb-1" style="background:#e05c5c; font-size:0.7rem;">🔴 Urgent</span>
+                        {% elif item.task.priority == 'high' %}
+                            <span class="badge mb-1" style="background:#e08c3a; font-size:0.7rem;">🟠 High</span>
+                        {% elif item.task.priority == 'medium' %}
+                            <span class="badge mb-1" style="background:#6a9bbf; font-size:0.7rem;">🔵 Medium</span>
+                        {% else %}
+                            <span class="badge mb-1" style="background:#5aab7a; font-size:0.7rem;">🟢 Low</span>
+                        {% endif %}
+                        <h6 class="mb-0 fw-bold" style="color:#2d4a5f;">{{ item.task.title }}</h6>
+                    </div>
+                    {% if item.task.created_by == request.user %}
+                    <a href="{% url 'delete_shared_task' item.task.pk %}"
+                       class="btn btn-sm btn-outline-danger"
+                       style="border-radius:8px;"
+                       onclick="return confirm('Delete this shared task?')">
+                        <i class="bi bi-trash"></i>
+                    </a>
+                    {% endif %}
+                </div>
+                {% if item.task.description %}
+                <p class="text-muted mb-2" style="font-size:0.85rem;">{{ item.task.description }}</p>
+                {% endif %}
+
+                <div class="d-flex gap-3 mb-3 flex-wrap">
+                    <small class="text-muted">
+                        <i class="bi bi-person me-1"></i>{{ item.task.created_by.username }}
+                    </small>
+                    {% if item.task.due_date %}
+                    <small class="text-muted">
+                        <i class="bi bi-calendar3 me-1"></i>{{ item.task.due_date }}
+                    </small>
+                    {% endif %}
+                    <small class="text-muted">
+                        <i class="bi bi-chat me-1"></i>{{ item.task.comments.count }} comment(s)
+                    </small>
+                </div>
+
+                <div class="mb-3">
+                    <div class="d-flex justify-content-between mb-1">
+                        <small class="text-muted">Overall Progress</small>
+                        <small style="color:#6a9bbf;">
+                            {{ item.task.completion_count }}/{{ item.task.total_assigned }}
+                        </small>
+                    </div>
+                    <div class="progress" style="height:6px;">
+                        <div class="progress-bar shared-bar"
+                             data-rate="{{ item.task.completion_rate }}"
+                             style="width:0%;"></div>
+                    </div>
+                </div>
+
+                {% if item.is_assigned %}
+                <div class="d-flex align-items-center gap-2 mb-3 p-2 rounded"
+                     style="background:{% if item.completion.completed %}#d4edda{% else %}#fff3cd{% endif %};">
+                    <i class="bi {% if item.completion.completed %}bi-check-circle-fill text-success{% else %}bi-clock text-warning{% endif %}"></i>
+                    <small style="font-size:0.82rem;">
+                        {% if item.completion.completed %}
+                            You completed this on {{ item.completion.completed_at|date:"M d, Y" }}
+                        {% else %}
+                            You haven't completed this yet
+                        {% endif %}
+                    </small>
+                </div>
+                {% endif %}
+
+                <div class="d-flex gap-2">
+                    <a href="{% url 'shared_task_detail' item.task.pk %}"
+                       class="btn btn-sm btn-main w-100">
+                        <i class="bi bi-eye me-1"></i> View Details
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% else %}
+<div class="card p-5 text-center">
+    <i class="bi bi-people" style="font-size:3rem; color:#a8cce0;"></i>
+    <h6 class="mt-3" style="color:#2d4a5f;">No shared tasks yet</h6>
+    <p class="text-muted" style="font-size:0.88rem;">Create a shared task to collaborate with others!</p>
+</div>
+{% endif %}
+
+<div class="modal fade" id="createTaskModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content" style="border-radius:16px; border:none;">
+            <div class="modal-header text-white" style="background: linear-gradient(135deg, #2d4a5f, #6a9bbf); border-radius:16px 16px 0 0;">
+                <h5 class="modal-title fw-bold">
+                    <i class="bi bi-plus-circle me-2"></i>Create Shared Task
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body p-4">
+                <form method="POST" action="{% url 'create_shared_task' %}" id="createTaskForm">
+                    {% csrf_token %}
+                    <div class="mb-3">
+                        <label class="form-label text-muted" style="font-size:0.85rem;">Task Title</label>
+                        {{ form.title }}
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label text-muted" style="font-size:0.85rem;">Description</label>
+                        {{ form.description }}
+                    </div>
+                    <div class="row g-3 mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label text-muted" style="font-size:0.85rem;">Priority</label>
+                            {{ form.priority }}
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label text-muted" style="font-size:0.85rem;">Due Date</label>
+                            {{ form.due_date }}
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label text-muted" style="font-size:0.85rem;">
+                            <i class="bi bi-people me-1"></i>Assign To
+                        </label>
+
+                        <div class="d-flex gap-2 mb-2">
+                            <input type="text"
+                                   id="userSearchInput"
+                                   class="form-control"
+                                   placeholder="Search by username..."
+                                   autocomplete="off">
+                            <button type="button"
+                                    class="btn"
+                                    onclick="addManualUser()"
+                                    style="border:1.5px solid #6a9bbf; color:#2d4a5f; border-radius:10px; white-space:nowrap;">
+                                <i class="bi bi-plus-lg"></i> Add
+                            </button>
+                        </div>
+
+                        <div id="searchResults"
+                             class="rounded p-0"
+                             style="display:none; background:#fff; border:1.5px solid #ddeaf3; border-radius:10px; max-height:160px; overflow-y:auto;">
+                        </div>
+
+                        <div id="selectedUsers" class="mt-2 d-flex flex-wrap gap-2"></div>
+
+                        <input type="hidden" name="assigned_user_ids" id="assignedUserIds">
+                    </div>
+
+                    <button type="submit" class="btn btn-main w-100">
+                        <i class="bi bi-send me-1"></i> Create & Share Task
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    document.querySelectorAll('.shared-bar').forEach(function(bar) {
+        bar.style.width = bar.getAttribute('data-rate') + '%';
+    });
+</script>
+
+<script>
+let selectedUsers = {};
+
+document.getElementById('userSearchInput').addEventListener('input', function() {
+    const query = this.value.trim();
+    if (query.length < 1) {
+        document.getElementById('searchResults').style.display = 'none';
+        return;
+    }
+
+    fetch(`/search-users/?q=${encodeURIComponent(query)}`)
+        .then(res => res.json())
+        .then(data => {
+            const resultsDiv = document.getElementById('searchResults');
+            if (data.users.length === 0) {
+                resultsDiv.innerHTML = '<div class="p-3 text-muted" style="font-size:0.85rem;">No users found.</div>';
+            } else {
+                resultsDiv.innerHTML = data.users.map(user => `
+                    <div class="px-3 py-2 d-flex justify-content-between align-items-center"
+                         style="cursor:pointer; border-bottom:1px solid #f0f4f8; font-size:0.88rem;"
+                         onmouseover="this.style.background='#f0f7fc'"
+                         onmouseout="this.style.background=''"
+                         onclick="addUser(${user.id}, '${user.username}')">
+                        <span><i class="bi bi-person-circle me-2" style="color:#6a9bbf;"></i>${user.username}</span>
+                        <span style="color:#6a9bbf; font-size:0.78rem;">Add</span>
+                    </div>
+                `).join('');
+            }
+            resultsDiv.style.display = 'block';
+        });
+});
+
+function addUser(id, username) {
+    if (!selectedUsers[id]) {
+        selectedUsers[id] = username;
+        renderSelectedUsers();
+    }
+    document.getElementById('userSearchInput').value = '';
+    document.getElementById('searchResults').style.display = 'none';
+}
+
+function addManualUser() {
+    const input = document.getElementById('userSearchInput').value.trim();
+    if (!input) return;
+
+    fetch(`/search-users/?q=${encodeURIComponent(input)}`)
+        .then(res => res.json())
+        .then(data => {
+            const exact = data.users.find(u => u.username.toLowerCase() === input.toLowerCase());
+            if (exact) {
+                addUser(exact.id, exact.username);
+            } else {
+                alert(`User "${input}" not found. Please check the username.`);
+            }
+        });
+}
+
+function renderSelectedUsers() {
+    const container = document.getElementById('selectedUsers');
+    container.innerHTML = Object.entries(selectedUsers).map(([id, username]) => `
+        <span style="background:#ddeaf3; color:#2d4a5f; border-radius:20px; padding:4px 12px; font-size:0.82rem; display:inline-flex; align-items:center; gap:6px;">
+            <i class="bi bi-person-fill"></i>${username}
+            <span onclick="removeUser(${id})"
+                  style="cursor:pointer; color:#e05c5c; font-weight:bold; font-size:0.9rem;">&times;</span>
+        </span>
+    `).join('');
+    document.getElementById('assignedUserIds').value = Object.keys(selectedUsers).join(',');
+}
+
+function removeUser(id) {
+    delete selectedUsers[id];
+    renderSelectedUsers();
+}
+
+document.addEventListener('click', function(e) {
+    const search = document.getElementById('userSearchInput');
+    const results = document.getElementById('searchResults');
+    if (!search.contains(e.target) && !results.contains(e.target)) {
+        results.style.display = 'none';
+    }
+});
+
+document.querySelectorAll('.shared-bar').forEach(function(bar) {
+    bar.style.width = bar.getAttribute('data-rate') + '%';
+});
+</script>
+
+{% endblock %}

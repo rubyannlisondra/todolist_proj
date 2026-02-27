@@ -1,7 +1,6 @@
 {% extends 'todos/base.html' %}
 {% block content %}
 
-<!-- Topbar -->
 <div class="topbar">
     <div>
         <h4>Dashboard</h4>
@@ -9,7 +8,6 @@
     </div>
 </div>
 
-<!-- Stats Row -->
 <div class="row g-3 mb-4">
     <div class="col-md-4">
         <div class="card p-3 text-center">
@@ -31,7 +29,6 @@
     </div>
 </div>
 
-<!-- Progress Bar -->
 <div class="card mb-4 p-3">
     <div class="d-flex justify-content-between align-items-center mb-2">
         <span class="fw-semibold" style="color:#2d4a5f;">Task Progress</span>
@@ -45,7 +42,6 @@
 
 <div class="row g-4">
 
-    <!-- Left: Forms -->
     <div class="col-md-4">
         <div class="card mb-4">
             <div class="card-header fw-bold text-white" style="background: linear-gradient(135deg, #2d4a5f, #6a9bbf);">
@@ -94,10 +90,8 @@
         </div>
     </div>
 
-    <!-- Right: Task List -->
     <div class="col-md-8">
 
-        <!-- Search & Sort -->
         <div class="card mb-3 p-3">
             <form method="GET" action="{% url 'index' %}" class="d-flex gap-2 flex-wrap">
                 <input type="text" name="search" value="{{ search_query }}" class="form-control" placeholder="🔍 Search tasks..." style="flex:1; min-width:150px;">
@@ -115,7 +109,6 @@
             </form>
         </div>
 
-        <!-- Tabs -->
         <div class="mb-3 d-flex flex-wrap gap-2">
             <a href="?tab=all" class="filter-btn {% if tab == 'all' %}active{% endif %}">All</a>
             <a href="?tab=today" class="filter-btn {% if tab == 'today' %}active{% endif %}">📅 Today</a>
@@ -123,7 +116,6 @@
             <a href="?tab=overdue" class="filter-btn {% if tab == 'overdue' %}active{% endif %}">⚠️ Overdue</a>
         </div>
 
-        <!-- Category Filter -->
         <div class="mb-3 d-flex flex-wrap gap-2">
             <a href="?tab={{ tab }}" class="filter-btn {% if not selected_category %}active{% endif %}">All Categories</a>
             {% for cat in categories %}
@@ -141,7 +133,6 @@
             {% endfor %}
         </div>
 
-        <!-- Tasks -->
         {% for todo in todos %}
         {% with subtask_total=todo.subtasks.count subtask_done=todo.subtasks.filter %}
         <div class="card task-card {% if todo.completed %}completed{% endif %}">
@@ -164,12 +155,10 @@
                             {% endif %}
                         </div>
 
-                        <!-- Title -->
                         <p class="mb-1 fw-semibold {% if todo.completed %}text-decoration-line-through text-muted{% endif %}" style="font-size:0.95rem; color:#2d4a5f;">
                             {{ todo.title }}
                         </p>
 
-                        <!-- Meta -->
                         <div class="d-flex gap-2 align-items-center flex-wrap">
                             {% if todo.category %}
                                 <span class="badge-category">{{ todo.category }}</span>
@@ -190,7 +179,6 @@
                             {% endif %}
                         </div>
 
-                        <!-- Subtask Progress -->
                         {% if todo.subtask_count > 0 %}
                         <div class="mt-2" style="max-width:200px;">
                             <div class="progress" style="height:5px;">
@@ -203,7 +191,6 @@
                         {% endif %}
                     </div>
 
-                    <!-- Action Buttons -->
                     <div class="d-flex gap-2 ms-2 flex-shrink-0">
                         <a href="{% url 'edit_todo' todo.pk %}" class="btn btn-sm" style="border-radius:8px; border:1.5px solid #6a9bbf; color:#2d4a5f;" title="Edit & Subtasks">
                             <i class="bi bi-pencil"></i>

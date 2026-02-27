@@ -8,7 +8,6 @@
 </div>
 
 <div class="row g-4">
-    <!-- Edit Form -->
     <div class="col-md-6">
         <div class="card shadow-sm">
             <div class="card-header fw-bold text-white" style="background: linear-gradient(135deg, #2d4a5f, #6a9bbf);">
@@ -50,7 +49,6 @@
         </div>
     </div>
 
-    <!-- Subtasks -->
     <div class="col-md-6">
         <div class="card shadow-sm">
             <div class="card-header fw-bold" style="background:#ddeaf3; color:#2d4a5f;">
@@ -60,7 +58,6 @@
                 </span>
             </div>
             <div class="card-body">
-                <!-- Add Subtask -->
                 <form method="POST" action="{% url 'add_subtask' todo.pk %}" class="d-flex gap-2 mb-3">
                     {% csrf_token %}
                     {{ subtask_form.title }}
@@ -69,7 +66,6 @@
                     </button>
                 </form>
 
-                <!-- Subtask List -->
                 {% for subtask in subtasks %}
                <div class="d-flex justify-content-between align-items-center p-2 mb-2 rounded 
      {% if subtask.completed %}border-success{% else %}border-info{% endif %}">

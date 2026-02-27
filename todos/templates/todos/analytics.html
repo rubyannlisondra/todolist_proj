@@ -1,0 +1,247 @@
+{% extends 'todos/base.html' %}
+{% block content %}
+
+<div class="topbar d-flex justify-content-between align-items-center">
+    <div>
+        <h4>Analytics & Reports</h4>
+        <p class="text-muted mb-0" style="font-size:0.9rem;">Your productivity insights</p>
+    </div>
+    <a href="{% url 'export_report' %}" class="btn btn-main">
+        <i class="bi bi-file-earmark-pdf me-1"></i> Export PDF Report
+    </a>
+</div>
+
+<div class="row g-3 mb-4">
+    <div class="col-md-3">
+        <div class="card p-3 text-center">
+            <div style="font-size:2rem; font-weight:700; color:#2d4a5f;">{{ total }}</div>
+            <div class="text-muted" style="font-size:0.85rem;">Total Tasks</div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card p-3 text-center">
+            <div style="font-size:2rem; font-weight:700; color:#5aab7a;">{{ completed }}</div>
+            <div class="text-muted" style="font-size:0.85rem;">Completed</div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card p-3 text-center">
+            <div style="font-size:2rem; font-weight:700; color:#e05c5c;">{{ overdue }}</div>
+            <div class="text-muted" style="font-size:0.85rem;">Overdue</div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card p-3 text-center">
+            <div style="font-size:2rem; font-weight:700; color:#6a9bbf;">{{ completion_rate }}%</div>
+            <div class="text-muted" style="font-size:0.85rem;">Completion Rate</div>
+        </div>
+    </div>
+</div>
+
+<div class="row g-3 mb-4">
+    <div class="col-md-6">
+        <div class="card p-4" style="border-left: 4px solid #f0a500;">
+            <div class="d-flex align-items-center gap-3">
+                <div style="font-size:2.5rem;">🔥</div>
+                <div>
+                    <div style="font-size:2rem; font-weight:700; color:#2d4a5f;">{{ streak }} day{{ streak|pluralize }}</div>
+                    <div class="text-muted" style="font-size:0.88rem;">Current Productivity Streak</div>
+                    <small class="text-muted" style="font-size:0.78rem;">
+                        {% if streak == 0 %}Complete a task today to start your streak!
+                        {% elif streak < 3 %}Great start! Keep it going!
+                        {% elif streak < 7 %}You're on a roll!
+                        {% else %}Incredible streak! You're unstoppable! 🚀
+                        {% endif %}
+                    </small>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="card p-4" style="border-left: 4px solid #6a9bbf;">
+            <div class="d-flex align-items-center gap-3">
+                <div style="font-size:2.5rem;">⭐</div>
+                <div style="flex:1;">
+                    <div style="font-size:2rem; font-weight:700; color:#2d4a5f;">{{ score }}<span style="font-size:1rem; color:#6a9bbf;">/100</span></div>
+                    <div class="text-muted" style="font-size:0.88rem;">Productivity Score</div>
+                    <div class="progress mt-2" style="height:8px;">
+                        <div class="progress-bar" style="width:{{ score }}%;"></div>
+                    </div>
+                    <small class="text-muted" style="font-size:0.78rem;">
+                        {% if score >= 80 %}Excellent! 🏆
+                        {% elif score >= 60 %}Good job! Keep pushing!
+                        {% elif score >= 40 %}Making progress!
+                        {% else %}Let's get those tasks done!
+                        {% endif %}
+                    </small>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row g-4 mb-4">
+
+    <div class="col-md-7">
+        <div class="card">
+            <div class="card-header fw-bold text-white" style="background: linear-gradient(135deg, #2d4a5f, #6a9bbf);">
+                <i class="bi bi-graph-up me-2"></i>Daily Productivity Trend (Last 14 Days)
+            </div>
+            <div class="card-body">
+                <canvas id="dailyChart" height="120"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-5">
+        <div class="card">
+            <div class="card-header fw-bold text-white" style="background: linear-gradient(135deg, #2d4a5f, #6a9bbf);">
+                <i class="bi bi-bar-chart me-2"></i>Weekly Trend (Last 8 Weeks)
+            </div>
+            <div class="card-body">
+                <canvas id="weeklyChart" height="120"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row g-4 mb-4">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header fw-bold" style="background:#ddeaf3; color:#2d4a5f;">
+                <i class="bi bi-tag me-2"></i>Category Progress
+            </div>
+            <div class="card-body">
+                {% for cat in category_data %}
+                <div class="mb-3">
+                    <div class="d-flex justify-content-between mb-1">
+                        <span style="font-size:0.88rem; color:#2d4a5f; font-weight:500;">{{ cat.name }}</span>
+                        <span style="font-size:0.78rem; color:#6a9bbf;">{{ cat.completed }}/{{ cat.total }} · {{ cat.rate }}%</span>
+                    </div>
+                    <div class="progress" style="height:8px;">
+                        <div class="progress-bar" style="width:{{ cat.rate }}%;"></div>
+                    </div>
+                </div>
+                {% empty %}
+                <div class="text-center text-muted py-3">
+                    <i class="bi bi-tag" style="font-size:2rem; color:#a8cce0;"></i>
+                    <p class="mt-2" style="font-size:0.88rem;">No categories yet.</p>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header fw-bold" style="background:#ddeaf3; color:#2d4a5f;">
+                <i class="bi bi-flag me-2"></i>Priority Breakdown
+            </div>
+            <div class="card-body">
+                {% for p in priority_data %}
+                <div class="d-flex justify-content-between align-items-center mb-3 p-2 rounded" style="background:#f5f9fc;">
+                    <div class="d-flex align-items-center gap-2">
+                        {% if p.label == 'Urgent' %}<span style="color:#e05c5c;">🔴</span>
+                        {% elif p.label == 'High' %}<span style="color:#e08c3a;">🟠</span>
+                        {% elif p.label == 'Medium' %}<span style="color:#6a9bbf;">🔵</span>
+                        {% else %}<span style="color:#5aab7a;">🟢</span>
+                        {% endif %}
+                        <span style="font-size:0.88rem; font-weight:500; color:#2d4a5f;">{{ p.label }}</span>
+                    </div>
+                    <div class="text-end">
+                        <span style="font-size:0.88rem; color:#2d4a5f; font-weight:600;">{{ p.completed }}/{{ p.total }}</span>
+                        <span class="text-muted" style="font-size:0.78rem;"> tasks done</span>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    const dailyLabels = {{ daily_labels|safe }};
+    const dailyCompleted = {{ daily_completed|safe }};
+    const dailyCreated = {{ daily_created|safe }};
+    const weeklyLabels = {{ weekly_labels|safe }};
+    const weeklyCompleted = {{ weekly_completed|safe }};
+
+    new Chart(document.getElementById('dailyChart'), {
+        type: 'line',
+        data: {
+            labels: dailyLabels,
+            datasets: [
+                {
+                    label: 'Completed',
+                    data: dailyCompleted,
+                    borderColor: '#5aab7a',
+                    backgroundColor: 'rgba(90,171,122,0.1)',
+                    tension: 0.4,
+                    fill: true,
+                    pointBackgroundColor: '#5aab7a',
+                    pointRadius: 4,
+                },
+                {
+                    label: 'Created',
+                    data: dailyCreated,
+                    borderColor: '#6a9bbf',
+                    backgroundColor: 'rgba(106,155,191,0.1)',
+                    tension: 0.4,
+                    fill: true,
+                    pointBackgroundColor: '#6a9bbf',
+                    pointRadius: 4,
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            plugins: {
+                legend: { position: 'top', labels: { font: { size: 11 } } }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    ticks: { stepSize: 1, font: { size: 10 } },
+                    grid: { color: '#f0f4f8' }
+                },
+                x: {
+                    ticks: { font: { size: 10 } },
+                    grid: { display: false }
+                }
+            }
+        }
+    });
+    
+    new Chart(document.getElementById('weeklyChart'), {
+        type: 'bar',
+        data: {
+            labels: weeklyLabels,
+            datasets: [{
+                label: 'Completed',
+                data: weeklyCompleted,
+                backgroundColor: 'rgba(45,74,95,0.75)',
+                borderRadius: 6,
+                borderSkipped: false,
+            }]
+        },
+        options: {
+            responsive: true,
+            plugins: {
+                legend: { display: false }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    ticks: { stepSize: 1, font: { size: 10 } },
+                    grid: { color: '#f0f4f8' }
+                },
+                x: {
+                    ticks: { font: { size: 9 } },
+                    grid: { display: false }
+                }
+            }
+        }
+    });
+</script>
+
+{% endblock %}

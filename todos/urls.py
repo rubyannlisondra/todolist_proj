@@ -25,4 +25,13 @@ urlpatterns = [
     path('delete-category/<int:pk>/', views.delete_category, name='delete_category'),
     path('analytics/', views.analytics_view, name='analytics'),
     path('analytics/export/', views.export_report, name='export_report'),
+    path('shared/', views.shared_tasks, name='shared_tasks'),
+    path('shared/create/', views.create_shared_task, name='create_shared_task'),
+    path('shared/<int:pk>/', views.shared_task_detail, name='shared_task_detail'),
+    path('shared/<int:pk>/toggle/', views.toggle_shared_task, name='toggle_shared_task'),
+    path('shared/<int:pk>/comment/', views.add_shared_comment, name='add_shared_comment'),
+    path('shared/<int:pk>/delete/', views.delete_shared_task, name='delete_shared_task'),
+    path('shared/progress/', views.shared_task_progress, name='shared_task_progress'),
+    path('shared/public/<int:pk>/', views.shared_task_public, name='shared_task_public'),
+    path('search-users/', views.search_users, name='search_users'),
 ]

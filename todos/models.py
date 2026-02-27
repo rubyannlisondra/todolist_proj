@@ -78,3 +78,56 @@ class UserProfile(models.Model):
 
     def __str__(self):
         return self.user.username
+    
+class SharedTask(models.Model):
+    PRIORITY_CHOICES = [
+        ('low', 'Low'),
+        ('medium', 'Medium'),
+        ('high', 'High'),
+        ('urgent', 'Urgent'),
+    ]
+
+    title = models.CharField(max_length=200)
+    description = models.TextField(blank=True)
+    created_by = models.ForeignKey(User, on_delete=models.CASCADE, related_name='created_shared_tasks')
+    assigned_to = models.ManyToManyField(User, related_name='assigned_shared_tasks', blank=True)
+    priority = models.CharField(max_length=10, choices=PRIORITY_CHOICES, default='medium')
+    due_date = models.DateField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return self.title
+
+    def completion_count(self):
+        return self.completions.filter(completed=True).count()
+
+    def total_assigned(self):
+        return self.assigned_to.count()
+
+    def completion_rate(self):
+        total = self.total_assigned()
+        if total == 0:
+            return 0
+        return round(self.completion_count() / total * 100)
+
+class SharedTaskCompletion(models.Model):
+    task = models.ForeignKey(SharedTask, on_delete=models.CASCADE, related_name='completions')
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    completed = models.BooleanField(default=False)
+    completed_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        unique_together = ('task', 'user')
+
+    def __str__(self):
+        return f'{self.user.username} - {self.task.title}'
+
+class SharedTaskComment(models.Model):
+    task = models.ForeignKey(SharedTask, on_delete=models.CASCADE, related_name='comments')
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    comment = models.TextField()
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f'{self.user.username}: {self.comment[:50]}'

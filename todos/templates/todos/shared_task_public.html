@@ -1,0 +1,178 @@
+{% extends 'todos/base.html' %}
+{% block content %}
+
+<div class="row justify-content-center">
+    <div class="col-md-8">
+
+        <div class="card mb-4">
+            <div class="card-header text-white fw-bold" style="background: linear-gradient(135deg, #2d4a5f, #6a9bbf);">
+                <div class="d-flex justify-content-between align-items-center">
+                    <span><i class="bi bi-share me-2"></i>Shared Task</span>
+                    <button class="btn btn-sm btn-light"
+                            onclick="copyLink(window.location.href)">
+                        <i class="bi bi-link-45deg me-1"></i> Copy Link
+                    </button>
+                </div>
+            </div>
+            <div class="card-body p-4">
+
+                <div class="mb-2">
+                    {% if task.priority == 'urgent' %}
+                        <span class="badge" style="background:#e05c5c;">🔴 Urgent</span>
+                    {% elif task.priority == 'high' %}
+                        <span class="badge" style="background:#e08c3a;">🟠 High</span>
+                    {% elif task.priority == 'medium' %}
+                        <span class="badge" style="background:#6a9bbf;">🔵 Medium</span>
+                    {% else %}
+                        <span class="badge" style="background:#5aab7a;">🟢 Low</span>
+                    {% endif %}
+                </div>
+
+                <h3 style="color:#2d4a5f; font-weight:700;">{{ task.title }}</h3>
+
+                {% if task.description %}
+                <p style="color:#555; font-size:0.95rem;">{{ task.description }}</p>
+                {% endif %}
+
+                <div class="d-flex gap-3 flex-wrap mt-3">
+                    <small class="text-muted">
+                        <i class="bi bi-person me-1"></i>Created by <strong>{{ task.created_by.username }}</strong>
+                    </small>
+                    {% if task.due_date %}
+                    <small class="text-muted">
+                        <i class="bi bi-calendar3 me-1"></i>Due {{ task.due_date }}
+                    </small>
+                    {% endif %}
+                    <small class="text-muted">
+                        <i class="bi bi-clock me-1"></i>{{ task.created_at|date:"M d, Y" }}
+                    </small>
+                </div>
+
+                <div class="mt-4">
+                    <div class="d-flex justify-content-between mb-1">
+                        <span style="font-size:0.88rem; font-weight:500; color:#2d4a5f;">Completion Progress</span>
+                        <span style="font-size:0.85rem; color:#6a9bbf;">
+                            {{ task.completion_count }}/{{ task.total_assigned }}
+                        </span>
+                    </div>
+                    <div class="progress" style="height:10px;">
+                        <div class="progress-bar"
+                             id="publicProgressBar"
+                             data-rate="{{ task.completion_rate }}"
+                             style="width:0%;"></div>
+                    </div>
+                    <small class="text-muted">{{ task.completion_rate }}% completed</small>
+                </div>
+
+                {% if user.is_authenticated and is_assigned %}
+                <div class="mt-4 p-3 rounded"
+                     style="background:{% if completion.completed %}#d4edda{% else %}#fff3cd{% endif %};">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <strong style="font-size:0.9rem;">My Status:</strong>
+                            {% if completion.completed %}
+                                <span class="text-success ms-2">✅ Completed</span>
+                            {% else %}
+                                <span class="text-warning ms-2">⏳ Pending</span>
+                            {% endif %}
+                        </div>
+                        <a href="{% url 'toggle_shared_task' task.pk %}"
+                           class="btn btn-sm {% if completion.completed %}btn-outline-secondary{% else %}btn-main{% endif %}"
+                           style="border-radius:8px;">
+                            {% if completion.completed %}
+                                <i class="bi bi-arrow-counterclockwise me-1"></i> Undo
+                            {% else %}
+                                <i class="bi bi-check-lg me-1"></i> Mark Complete
+                            {% endif %}
+                        </a>
+                    </div>
+                </div>
+                {% elif not user.is_authenticated %}
+                <div class="mt-4 p-3 rounded" style="background:#f5f9fc; border:1.5px solid #ddeaf3;">
+                    <p class="mb-2 text-muted" style="font-size:0.88rem;">
+                        <i class="bi bi-lock me-1"></i>
+                        You need an account to mark this task as complete or leave comments.
+                    </p>
+                    <div class="d-flex gap-2">
+                        <a href="{% url 'login' %}" class="btn btn-main btn-sm">Login</a>
+                        <a href="{% url 'register' %}" class="btn btn-sm"
+                           style="border:1.5px solid #6a9bbf; color:#2d4a5f; border-radius:8px;">Register</a>
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <div class="card mb-4">
+            <div class="card-header fw-bold" style="background:#ddeaf3; color:#2d4a5f;">
+                <i class="bi bi-people me-2"></i>Assignees ({{ task.total_assigned }})
+            </div>
+            <div class="card-body p-0">
+                {% for c in completions %}
+                <div class="d-flex justify-content-between align-items-center px-3 py-2 border-bottom">
+                    <div class="d-flex align-items-center gap-2">
+                        <div style="width:32px; height:32px; background:#ddeaf3; border-radius:50%; display:flex; align-items:center; justify-content:center;">
+                            <i class="bi bi-person-fill" style="color:#2d4a5f; font-size:0.85rem;"></i>
+                        </div>
+                        <span style="font-size:0.88rem; color:#2d4a5f;">{{ c.user.username }}</span>
+                    </div>
+                    {% if c.completed %}
+                        <span class="badge" style="background:#d4edda; color:#155724; border-radius:20px; padding:4px 10px; font-size:0.75rem;">✅ Done</span>
+                    {% else %}
+                        <span class="badge" style="background:#fff3cd; color:#856404; border-radius:20px; padding:4px 10px; font-size:0.75rem;">⏳ Pending</span>
+                    {% endif %}
+                </div>
+                {% empty %}
+                <div class="text-center py-3 text-muted" style="font-size:0.85rem;">No assignees.</div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-header fw-bold" style="background:#ddeaf3; color:#2d4a5f;">
+                <i class="bi bi-chat me-2"></i>Comments ({{ task.comments.count }})
+            </div>
+            <div class="card-body">
+                {% if user.is_authenticated %}
+                <form method="POST" action="{% url 'add_shared_comment' task.pk %}" class="mb-4">
+                    {% csrf_token %}
+                    {{ comment_form.comment }}
+                    <button type="submit" class="btn btn-main mt-2">
+                        <i class="bi bi-send me-1"></i> Post Comment
+                    </button>
+                </form>
+                {% endif %}
+
+                {% for comment in comments %}
+                <div class="d-flex gap-3 mb-3">
+                    <div style="width:36px; height:36px; background:#ddeaf3; border-radius:50%; display:flex; align-items:center; justify-content:center; flex-shrink:0;">
+                        <i class="bi bi-person-fill" style="color:#2d4a5f;"></i>
+                    </div>
+                    <div class="w-100">
+                        <div class="p-3 rounded" style="background:#f5f9fc;">
+                            <div class="d-flex justify-content-between mb-1">
+                                <strong style="font-size:0.85rem; color:#2d4a5f;">{{ comment.user.username }}</strong>
+                                <small class="text-muted" style="font-size:0.75rem;">{{ comment.created_at|date:"M d, Y H:i" }}</small>
+                            </div>
+                            <p class="mb-0" style="font-size:0.88rem; color:#444;">{{ comment.comment }}</p>
+                        </div>
+                    </div>
+                </div>
+                {% empty %}
+                <div class="text-center text-muted py-3">
+                    <i class="bi bi-chat" style="font-size:2rem; color:#a8cce0;"></i>
+                    <p class="mt-2" style="font-size:0.85rem;">No comments yet.</p>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<script>
+    document.getElementById('publicProgressBar').style.width =
+        document.getElementById('publicProgressBar').getAttribute('data-rate') + '%';
+</script>
+
+{% endblock %}
