@@ -79,7 +79,58 @@ class UserProfile(models.Model):
     def __str__(self):
         return self.user.username
     
-class SharedTask(models.Model):
+class Group(models.Model):
+    name = models.CharField(max_length=100)
+    description = models.TextField(blank=True)
+    created_by = models.ForeignKey(User, on_delete=models.CASCADE, related_name='owned_groups')
+    members = models.ManyToManyField(User, through='GroupMember', related_name='joined_groups')
+    created_at = models.DateTimeField(auto_now_add=True)
+    invite_code = models.CharField(max_length=20, unique=True, blank=True)
+
+    def __str__(self):
+        return self.name
+
+    def save(self, *args, **kwargs):
+        if not self.invite_code:
+            import uuid
+            self.invite_code = str(uuid.uuid4())[:8].upper()
+        super().save(*args, **kwargs)
+
+    def task_count(self):
+        return self.group_tasks.count()
+
+    def member_count(self):
+        return self.members.count()
+
+    def completion_rate(self):
+        total = self.group_tasks.count()
+        if total == 0:
+            return 0
+        done = self.group_tasks.filter(status='done').count()
+        return round(done / total * 100)
+
+class GroupMember(models.Model):
+    ROLE_CHOICES = [
+        ('admin', 'Admin'),
+        ('member', 'Member'),
+    ]
+    group = models.ForeignKey(Group, on_delete=models.CASCADE)
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    role = models.CharField(max_length=10, choices=ROLE_CHOICES, default='member')
+    joined_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = ('group', 'user')
+
+    def __str__(self):
+        return f'{self.user.username} in {self.group.name}'
+
+class GroupTask(models.Model):
+    STATUS_CHOICES = [
+        ('todo', 'To Do'),
+        ('inprogress', 'In Progress'),
+        ('done', 'Done'),
+    ]
     PRIORITY_CHOICES = [
         ('low', 'Low'),
         ('medium', 'Medium'),
@@ -87,47 +138,85 @@ class SharedTask(models.Model):
         ('urgent', 'Urgent'),
     ]
 
+    group = models.ForeignKey(Group, on_delete=models.CASCADE, related_name='group_tasks')
     title = models.CharField(max_length=200)
-    description = models.TextField(blank=True)
-    created_by = models.ForeignKey(User, on_delete=models.CASCADE, related_name='created_shared_tasks')
-    assigned_to = models.ManyToManyField(User, related_name='assigned_shared_tasks', blank=True)
+    status = models.CharField(max_length=15, choices=STATUS_CHOICES, default='todo')
     priority = models.CharField(max_length=10, choices=PRIORITY_CHOICES, default='medium')
+    created_by = models.ForeignKey(User, on_delete=models.CASCADE, related_name='created_group_tasks')
     due_date = models.DateField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+    order = models.IntegerField(default=0)
+
+    class Meta:
+        ordering = ['order', '-created_at']
 
     def __str__(self):
         return self.title
 
-    def completion_count(self):
-        return self.completions.filter(completed=True).count()
+    def subtask_count(self):
+        return self.group_subtasks.count()
 
-    def total_assigned(self):
-        return self.assigned_to.count()
+    def completed_subtask_count(self):
+        return self.group_subtasks.filter(status='done').count()
 
     def completion_rate(self):
-        total = self.total_assigned()
+        total = self.subtask_count()
         if total == 0:
             return 0
-        return round(self.completion_count() / total * 100)
+        return round(self.completed_subtask_count() / total * 100)
 
-class SharedTaskCompletion(models.Model):
-    task = models.ForeignKey(SharedTask, on_delete=models.CASCADE, related_name='completions')
-    user = models.ForeignKey(User, on_delete=models.CASCADE)
-    completed = models.BooleanField(default=False)
-    completed_at = models.DateTimeField(null=True, blank=True)
+    def all_assignees(self):
+        return User.objects.filter(
+            group_subtasks__task=self
+        ).distinct()
+
+
+class GroupSubtask(models.Model):
+    STATUS_CHOICES = [
+        ('todo', 'To Do'),
+        ('inprogress', 'In Progress'),
+        ('done', 'Done'),
+    ]
+    PRIORITY_CHOICES = [
+        ('low', 'Low'),
+        ('medium', 'Medium'),
+        ('high', 'High'),
+        ('urgent', 'Urgent'),
+    ]
+
+    task = models.ForeignKey(GroupTask, on_delete=models.CASCADE, related_name='group_subtasks')
+    title = models.CharField(max_length=200)
+    assigned_to = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='assigned_subtasks')
+    status = models.CharField(max_length=15, choices=STATUS_CHOICES, default='todo')
+    priority = models.CharField(max_length=10, choices=PRIORITY_CHOICES, default='medium')
+    due_date = models.DateField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
-        unique_together = ('task', 'user')
+        ordering = ['created_at']
 
     def __str__(self):
-        return f'{self.user.username} - {self.task.title}'
+        return self.title
 
-class SharedTaskComment(models.Model):
-    task = models.ForeignKey(SharedTask, on_delete=models.CASCADE, related_name='comments')
+
+class GroupTaskComment(models.Model):
+    task = models.ForeignKey(GroupTask, on_delete=models.CASCADE, related_name='comments')
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     comment = models.TextField()
     created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
         return f'{self.user.username}: {self.comment[:50]}'
+
+class GroupActivity(models.Model):
+    group = models.ForeignKey(Group, on_delete=models.CASCADE, related_name='activities')
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    message = models.CharField(max_length=255)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return self.message

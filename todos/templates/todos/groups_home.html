@@ -1,0 +1,183 @@
+{% extends 'todos/base.html' %}
+{% block content %}
+
+<div class="topbar d-flex justify-content-between align-items-center">
+    <div>
+        <h4>Class Board</h4>
+        <p class="text-muted mb-0" style="font-size:0.9rem;">Your groups and collaborative workspaces</p>
+    </div>
+    <div class="d-flex gap-2">
+        <button class="btn" style="border:1.5px solid #6a9bbf; color:#2d4a5f; border-radius:10px;"
+                data-bs-toggle="modal" data-bs-target="#joinGroupModal">
+            <i class="bi bi-box-arrow-in-right me-1"></i> Join Group
+        </button>
+        <button class="btn btn-main" data-bs-toggle="modal" data-bs-target="#createGroupModal">
+            <i class="bi bi-plus-lg me-1"></i> New Group
+        </button>
+    </div>
+</div>
+
+{% if my_groups %}
+<div class="row g-3">
+    {% for group in my_groups %}
+    <div class="col-md-4">
+        <div class="card h-100" style="border-top: 4px solid #6a9bbf;">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-start mb-2">
+                    <div>
+                        <h6 class="fw-bold mb-1" style="color:#2d4a5f;">{{ group.name }}</h6>
+                        <p class="text-muted mb-0" style="font-size:0.82rem;">
+                            {{ group.description|truncatechars:60 }}
+                        </p>
+                    </div>
+                    {% if group.created_by == request.user %}
+                    <span class="badge" style="background:#ddeaf3; color:#2d4a5f; font-size:0.7rem;">Admin</span>
+                    {% endif %}
+                </div>
+
+                <!-- Stats -->
+                <div class="d-flex gap-3 my-3">
+                    <div class="text-center">
+                        <div style="font-size:1.2rem; font-weight:700; color:#2d4a5f;">{{ group.task_count }}</div>
+                        <div class="text-muted" style="font-size:0.72rem;">Tasks</div>
+                    </div>
+                    <div class="text-center">
+                        <div style="font-size:1.2rem; font-weight:700; color:#5aab7a;">{{ group.completion_rate }}%</div>
+                        <div class="text-muted" style="font-size:0.72rem;">Done</div>
+                    </div>
+                    <div class="text-center">
+                        <div style="font-size:1.2rem; font-weight:700; color:#6a9bbf;">{{ group.member_count }}</div>
+                        <div class="text-muted" style="font-size:0.72rem;">Members</div>
+                    </div>
+                </div>
+
+                <!-- Progress -->
+                <div class="progress mb-3" style="height:6px;">
+                    <div class="progress-bar group-bar"
+                         data-rate="{{ group.completion_rate }}"
+                         style="width:0%;"></div>
+                </div>
+
+                <!-- Members Avatars -->
+                <div class="d-flex align-items-center gap-1 mb-3">
+                    {% for gm in group.groupmember_set.all|slice:":5" %}
+                    <div style="width:28px; height:28px; background:#ddeaf3; border-radius:50%; border:2px solid #fff; display:flex; align-items:center; justify-content:center; font-size:0.7rem; font-weight:700; color:#2d4a5f; margin-left:-6px;">
+                        {{ gm.user.username|first|upper }}
+                    </div>
+                    {% endfor %}
+                    {% if group.member_count > 5 %}
+                    <div style="width:28px; height:28px; background:#a8cce0; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:0.65rem; color:#fff; margin-left:-6px;">
+                        +{{ group.member_count|add:"-5" }}
+                    </div>
+                    {% endif %}
+                </div>
+
+                <!-- Invite Code -->
+                <div class="d-flex align-items-center gap-2 mb-3 p-2 rounded" style="background:#f5f9fc;">
+                    <i class="bi bi-link-45deg" style="color:#6a9bbf;"></i>
+                    <code style="font-size:0.82rem; color:#2d4a5f; flex:1;">{{ group.invite_code }}</code>
+                    <button class="btn btn-sm"
+                            style="border:1px solid #ddeaf3; border-radius:6px; padding:2px 8px; font-size:0.75rem;"
+                            onclick="copyInviteCode('{{ group.invite_code }}')">
+                        <i class="bi bi-copy"></i>
+                    </button>
+                </div>
+
+                <a href="{% url 'group_detail' group.pk %}" class="btn btn-main w-100">
+                    <i class="bi bi-arrow-right me-1"></i> Open Board
+                </a>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% else %}
+<div class="card p-5 text-center">
+    <i class="bi bi-people" style="font-size:3rem; color:#a8cce0;"></i>
+    <h6 class="mt-3" style="color:#2d4a5f;">No groups yet</h6>
+    <p class="text-muted" style="font-size:0.88rem;">Create a group or join one with an invite code!</p>
+    <div class="d-flex gap-2 justify-content-center mt-2">
+        <button class="btn btn-main" data-bs-toggle="modal" data-bs-target="#createGroupModal">
+            <i class="bi bi-plus-lg me-1"></i> Create Group
+        </button>
+        <button class="btn" style="border:1.5px solid #6a9bbf; color:#2d4a5f; border-radius:10px;"
+                data-bs-toggle="modal" data-bs-target="#joinGroupModal">
+            <i class="bi bi-box-arrow-in-right me-1"></i> Join Group
+        </button>
+    </div>
+</div>
+{% endif %}
+
+<!-- Create Group Modal -->
+<div class="modal fade" id="createGroupModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content" style="border-radius:16px; border:none;">
+            <div class="modal-header text-white" style="background:linear-gradient(135deg,#2d4a5f,#6a9bbf); border-radius:16px 16px 0 0;">
+                <h5 class="modal-title fw-bold"><i class="bi bi-plus-circle me-2"></i>Create New Group</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body p-4">
+                <form method="POST" action="{% url 'create_group' %}">
+                    {% csrf_token %}
+                    <div class="mb-3">
+                        <label class="form-label text-muted" style="font-size:0.85rem;">Group Name</label>
+                        {{ form.name }}
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label text-muted" style="font-size:0.85rem;">Description</label>
+                        {{ form.description }}
+                    </div>
+                    <button type="submit" class="btn btn-main w-100">
+                        <i class="bi bi-people me-1"></i> Create Group
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Join Group Modal -->
+<div class="modal fade" id="joinGroupModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content" style="border-radius:16px; border:none;">
+            <div class="modal-header text-white" style="background:linear-gradient(135deg,#2d4a5f,#6a9bbf); border-radius:16px 16px 0 0;">
+                <h5 class="modal-title fw-bold"><i class="bi bi-box-arrow-in-right me-2"></i>Join a Group</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body p-4">
+                <form method="POST" action="{% url 'join_group' %}">
+                    {% csrf_token %}
+                    <div class="mb-3">
+                        <label class="form-label text-muted" style="font-size:0.85rem;">Enter Invite Code</label>
+                        <input type="text" name="invite_code" class="form-control"
+                               placeholder="e.g. A1B2C3D4" style="letter-spacing:2px; text-transform:uppercase;">
+                    </div>
+                    <button type="submit" class="btn btn-main w-100">
+                        <i class="bi bi-check-lg me-1"></i> Join Group
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Copy Toast -->
+<div id="copyToast" style="display:none; position:fixed; bottom:24px; right:24px; background:#2d4a5f; color:#fff; padding:10px 20px; border-radius:12px; font-size:0.88rem; z-index:9999; box-shadow:0 4px 15px rgba(45,74,95,0.3);">
+    <i class="bi bi-check-circle me-2"></i> Invite code copied!
+</div>
+
+<script>
+document.querySelectorAll('.group-bar').forEach(function(bar) {
+    bar.style.width = bar.getAttribute('data-rate') + '%';
+});
+
+function copyInviteCode(code) {
+    navigator.clipboard.writeText(code).then(function() {
+        const toast = document.getElementById('copyToast');
+        toast.style.display = 'block';
+        setTimeout(function() { toast.style.display = 'none'; }, 3000);
+    });
+}
+</script>
+
+{% endblock %}

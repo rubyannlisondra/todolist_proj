@@ -1,8 +1,8 @@
 from django import forms
 from django.contrib.auth.models import User
-from .models import Todo, Category, UserProfile, Subtask
+from .models import GroupSubtask, Todo, Category, UserProfile, Subtask, Group, GroupTask, GroupTaskComment
 from django.contrib.auth.models import User
-from .models import Todo, Category, UserProfile, Subtask, SharedTask, SharedTaskComment
+
 
 class TodoForm(forms.ModelForm):
     def __init__(self, *args, user=None, **kwargs):
@@ -56,43 +56,40 @@ class UserUpdateForm(forms.ModelForm):
             'email': forms.EmailInput(attrs={'class': 'form-control'}),
         }
 
-class SharedTaskForm(forms.ModelForm):
-    assigned_to = forms.ModelMultipleChoiceField(
-        queryset=User.objects.filter(is_superuser=False, is_staff=False),
-        widget=forms.CheckboxSelectMultiple(),
-        required=False,
-        label='Assign To'
-    )
-
+class GroupForm(forms.ModelForm):
     class Meta:
-        model = SharedTask
-        fields = ['title', 'description', 'priority', 'due_date', 'assigned_to']
+        model = Group
+        fields = ['name', 'description']
+        widgets = {
+            'name': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Group name...'}),
+            'description': forms.Textarea(attrs={'class': 'form-control', 'rows': 2, 'placeholder': 'What is this group about?'}),
+        }
+
+class GroupTaskForm(forms.ModelForm):
+    class Meta:
+        model = GroupTask
+        fields = ['title', 'priority', 'due_date', 'status']
         widgets = {
             'title': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Task title...'}),
-            'description': forms.Textarea(attrs={'class': 'form-control', 'rows': 3, 'placeholder': 'Task description...'}),
+            'priority': forms.Select(attrs={'class': 'form-select'}),
+            'status': forms.Select(attrs={'class': 'form-select'}),
+            'due_date': forms.DateInput(attrs={'type': 'date', 'class': 'form-control'}),
+        }
+
+class GroupSubtaskForm(forms.ModelForm):
+    class Meta:
+        model = GroupSubtask
+        fields = ['title', 'priority', 'due_date']
+        widgets = {
+            'title': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Subtask title...'}),
             'priority': forms.Select(attrs={'class': 'form-select'}),
             'due_date': forms.DateInput(attrs={'type': 'date', 'class': 'form-control'}),
         }
 
-class SharedTaskCommentForm(forms.ModelForm):
+class GroupTaskCommentForm(forms.ModelForm):
     class Meta:
-        model = SharedTaskComment
+        model = GroupTaskComment
         fields = ['comment']
         widgets = {
-            'comment': forms.Textarea(attrs={
-                'class': 'form-control',
-                'rows': 2,
-                'placeholder': 'Write a comment...'
-            }),
-        }
-
-class SharedTaskForm(forms.ModelForm):
-    class Meta:
-        model = SharedTask
-        fields = ['title', 'description', 'priority', 'due_date']
-        widgets = {
-            'title': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Task title...'}),
-            'description': forms.Textarea(attrs={'class': 'form-control', 'rows': 3, 'placeholder': 'Task description...'}),
-            'priority': forms.Select(attrs={'class': 'form-select'}),
-            'due_date': forms.DateInput(attrs={'type': 'date', 'class': 'form-control'}),
+            'comment': forms.Textarea(attrs={'class': 'form-control', 'rows': 2, 'placeholder': 'Write a comment...'}),
         }

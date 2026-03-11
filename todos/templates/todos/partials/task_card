@@ -1,0 +1,70 @@
+<div class="card mb-2" style="border-left: 3px solid
+    {% if task.priority == 'urgent' %}#e05c5c
+    {% elif task.priority == 'high' %}#e08c3a
+    {% elif task.priority == 'medium' %}#6a9bbf
+    {% else %}#5aab7a{% endif %};">
+    <div class="card-body p-3">
+
+        <!-- Title -->
+        <a href="{% url 'group_task_detail' group.pk task.pk %}"
+           style="font-size:0.88rem; font-weight:600; color:#2d4a5f; text-decoration:none; display:block; margin-bottom:6px;">
+            {{ task.title }}
+        </a>
+
+        <!-- Priority & Due Date -->
+        <div class="d-flex gap-1 flex-wrap mb-2">
+            {% if task.priority == 'urgent' %}
+                <span class="badge" style="background:#e05c5c; font-size:0.65rem;">🔴 Urgent</span>
+            {% elif task.priority == 'high' %}
+                <span class="badge" style="background:#e08c3a; font-size:0.65rem;">🟠 High</span>
+            {% elif task.priority == 'medium' %}
+                <span class="badge" style="background:#6a9bbf; font-size:0.65rem;">🔵 Medium</span>
+            {% else %}
+                <span class="badge" style="background:#5aab7a; font-size:0.65rem;">🟢 Low</span>
+            {% endif %}
+            {% if task.due_date %}
+            <span class="badge" style="background:#f5f9fc; color:#6a9bbf; font-size:0.65rem; border:1px solid #ddeaf3;">
+                <i class="bi bi-calendar3"></i> {{ task.due_date }}
+            </span>
+            {% endif %}
+        </div>
+
+        <!-- Assignee Avatars -->
+        {% if task.assigned_to.all %}
+        <div class="d-flex align-items-center gap-1 mb-2">
+            {% for u in task.assigned_to.all|slice:":4" %}
+            <div style="width:22px; height:22px; background:#ddeaf3; border-radius:50%; border:2px solid #fff; display:flex; align-items:center; justify-content:center; font-size:0.6rem; font-weight:700; color:#2d4a5f; margin-left:-4px;"
+                 title="{{ u.username }}">
+                {{ u.username|first|upper }}
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+
+        <!-- Footer: Comments + Move Button -->
+        <div class="d-flex justify-content-between align-items-center mt-2">
+            <small class="text-muted" style="font-size:0.72rem;">
+                <i class="bi bi-chat me-1"></i>{{ task.comments.count }}
+            </small>
+            <form method="POST" action="{% url 'update_task_status' group.pk task.pk %}" class="d-inline">
+                {% csrf_token %}
+                {% if task.status == 'todo' %}
+                <button name="status" value="inprogress" class="btn btn-sm"
+                        style="border-radius:6px; border:1px solid #e08c3a; color:#e08c3a; font-size:0.7rem; padding:2px 6px;">
+                    Start →
+                </button>
+                {% elif task.status == 'inprogress' %}
+                <button name="status" value="done" class="btn btn-sm"
+                        style="border-radius:6px; border:1px solid #5aab7a; color:#5aab7a; font-size:0.7rem; padding:2px 6px;">
+                    Done ✓
+                </button>
+                {% else %}
+                <button name="status" value="todo" class="btn btn-sm"
+                        style="border-radius:6px; border:1px solid #6a9bbf; color:#6a9bbf; font-size:0.7rem; padding:2px 6px;">
+                    Reopen ↺
+                </button>
+                {% endif %}
+            </form>
+        </div>
+    </div>
+</div>
